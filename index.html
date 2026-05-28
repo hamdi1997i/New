@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="description" content="Advanced NFC Writer & Reader web tool — write Text, URL, WiFi, vCard, Email, SMS, Geo, App and raw records to NFC tags right from your browser." />
+  <title>NFC Studio — Advanced NFC Writer &amp; Reader</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A1%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-logo" aria-hidden="true">📡</span>
+      <div>
+        <h1>NFC Studio</h1>
+        <p class="tagline">Advanced NFC Writer &amp; Reader</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="support-pill" class="pill pill-muted" title="Web NFC availability">Checking…</span>
+      <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="write" role="tab">✍️ Write</button>
+    <button class="tab" data-tab="read" role="tab">📖 Read</button>
+    <button class="tab" data-tab="tools" role="tab">🧰 Tools</button>
+    <button class="tab" data-tab="history" role="tab">🕑 History</button>
+  </nav>
+
+  <main>
+    <!-- ===================== WRITE ===================== -->
+    <section id="tab-write" class="tab-panel active" role="tabpanel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Records to write</h2>
+          <div class="row-actions">
+            <button id="export-records" class="btn btn-ghost" title="Export records as JSON">⬇ Export</button>
+            <button id="import-records" class="btn btn-ghost" title="Import records from JSON">⬆ Import</button>
+            <button id="clear-records" class="btn btn-ghost" title="Remove all records">🗑 Clear</button>
+          </div>
+        </div>
+
+        <div class="add-record">
+          <label for="record-type">Add a record</label>
+          <div class="add-record-row">
+            <select id="record-type">
+              <option value="text">📝 Text</option>
+              <option value="url">🔗 URL / Link</option>
+              <option value="wifi">📶 Wi-Fi network</option>
+              <option value="vcard">👤 Contact (vCard)</option>
+              <option value="email">✉️ Email</option>
+              <option value="sms">💬 SMS</option>
+              <option value="tel">📞 Phone call</option>
+              <option value="geo">📍 Geo location</option>
+              <option value="app">📱 Android app</option>
+              <option value="mime">🧬 Custom MIME</option>
+              <option value="raw">🧱 Raw external type</option>
+            </select>
+            <button id="add-record" class="btn btn-primary">+ Add</button>
+          </div>
+        </div>
+
+        <ul id="records-list" class="records-list"></ul>
+        <p id="records-empty" class="empty-note">No records yet. Add one above to start building your tag payload.</p>
+
+        <div class="capacity">
+          <div class="capacity-bar"><div id="capacity-fill" class="capacity-fill"></div></div>
+          <div class="capacity-meta">
+            <span id="payload-size">0 bytes</span>
+            <select id="tag-capacity" title="Reference tag capacity">
+              <option value="48">NTAG203 (48 B)</option>
+              <option value="144" selected>NTAG213 (144 B)</option>
+              <option value="504">NTAG215 (504 B)</option>
+              <option value="888">NTAG216 (888 B)</option>
+              <option value="716">Mifare 1K (716 B)</option>
+              <option value="0">Unknown / no limit</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card write-options">
+        <h2>Write options</h2>
+        <label class="check"><input type="checkbox" id="opt-overwrite" checked /> Overwrite existing data</label>
+        <label class="check"><input type="checkbox" id="opt-lock" /> 🔒 Make read-only after write <span class="warn-inline">(permanent!)</span></label>
+        <button id="write-btn" class="btn btn-primary btn-lg">📲 Write to tag</button>
+        <button id="cancel-write" class="btn btn-ghost" hidden>✕ Cancel</button>
+      </div>
+    </section>
+
+    <!-- ===================== READ ===================== -->
+    <section id="tab-read" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Scan a tag</h2>
+          <div class="row-actions">
+            <button id="scan-btn" class="btn btn-primary">▶ Start scanning</button>
+            <button id="stop-scan-btn" class="btn btn-ghost" hidden>■ Stop</button>
+          </div>
+        </div>
+        <div id="scan-status" class="scan-status idle">Idle — press “Start scanning”, then tap a tag.</div>
+        <div id="read-result" class="read-result"></div>
+        <div class="row-actions read-footer" hidden id="read-footer">
+          <button id="copy-to-write" class="btn btn-ghost">⧉ Clone these records to Writer</button>
+          <button id="copy-read-json" class="btn btn-ghost">📋 Copy JSON</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TOOLS ===================== -->
+    <section id="tab-tools" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <h2>Quick actions</h2>
+        <div class="tools-grid">
+          <button class="tool-card" data-tool="erase">🧹<span>Erase tag</span><small>Write an empty record</small></button>
+          <button class="tool-card" data-tool="lock">🔒<span>Lock tag</span><small>Make permanently read-only</small></button>
+          <button class="tool-card" data-tool="clone">📑<span>Clone tag</span><small>Read one → write to another</small></button>
+          <button class="tool-card" data-tool="info">ℹ️<span>Tag info</span><small>Serial &amp; tech details</small></button>
+        </div>
+        <div id="tools-status" class="scan-status idle">Pick an action above.</div>
+      </div>
+
+      <div class="card">
+        <h2>Text ⇄ Bytes converter</h2>
+        <textarea id="conv-text" class="conv-input" placeholder="Type text to see its UTF-8 byte size and hex…"></textarea>
+        <div id="conv-out" class="conv-out">0 bytes · 0 chars</div>
+      </div>
+    </section>
+
+    <!-- ===================== HISTORY ===================== -->
+    <section id="tab-history" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Activity history</h2>
+          <button id="clear-history" class="btn btn-ghost">🗑 Clear history</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+        <p id="history-empty" class="empty-note">No activity yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scan overlay -->
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="nfc-pulse">📡</div>
+      <p id="overlay-text">Tap your NFC tag to the back of your phone…</p>
+      <button id="overlay-cancel" class="btn btn-ghost">Cancel</button>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <p>Uses the <a href="https://developer.mozilla.org/docs/Web/API/Web_NFC_API" target="_blank" rel="noopener">Web NFC API</a> — works in Chrome for Android over HTTPS. All processing stays on your device.</p>
+  </footer>
+
+  <input type="file" id="import-file" accept="application/json,.json" hidden />
+
+  <script src="js/records.js"></script>
+  <script src="js/nfc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

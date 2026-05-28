@@ -169,8 +169,7 @@
       toast('✅ Tag written' + (lock ? ' & locked' : '') + ' successfully', 'success');
       logHistory('Write', `${records.length} record(s)${lock ? ', locked' : ''}`, 'success');
     } catch (e) {
-      if (e.name === 'AbortError') { toast('Write cancelled'); }
-      else { toast('Write failed: ' + e.message, 'error'); logHistory('Write failed', e.message, 'error'); }
+      if (e.name !== 'AbortError') { toast('Write failed: ' + e.message, 'error'); logHistory('Write failed', e.message, 'error'); }
     } finally {
       hideOverlay();
       toggleWriteButtons(false);
@@ -350,6 +349,17 @@
   function showOverlay(text) { $('#overlay-text').textContent = text; $('#overlay').hidden = false; }
   function hideOverlay() { $('#overlay').hidden = true; }
 
+  // Cancel any active operation AND force the UI back to a clean state, even if
+  // the underlying NFC promise never rejects on abort (happens on some devices).
+  function cancelActive() {
+    if (activeController) { try { activeController.abort(); } catch (e) {} }
+    activeController = null;
+    hideOverlay();
+    toggleWriteButtons(false);
+    if ($('#tools-status').classList.contains('active')) setToolsStatus('Cancelled.', 'idle');
+    toast('Cancelled');
+  }
+
   // ---------------------------------------------------------------- import / export
   function exportRecords() {
     const blob = new Blob([JSON.stringify({ version: 1, records }, null, 2)], { type: 'application/json' });
@@ -428,7 +438,7 @@
     $('#tag-capacity').addEventListener('change', updateCapacity);
     // write
     $('#write-btn').addEventListener('click', doWrite);
-    $('#cancel-write').addEventListener('click', () => activeController && activeController.abort());
+    $('#cancel-write').addEventListener('click', cancelActive);
     // read
     $('#scan-btn').addEventListener('click', startScan);
     $('#stop-scan-btn').addEventListener('click', stopScan);
@@ -451,7 +461,7 @@
       if (confirm('Clear all history?')) { history = []; save(); renderHistory(); }
     });
     // overlay cancel
-    $('#overlay-cancel').addEventListener('click', () => activeController && activeController.abort());
+    $('#overlay-cancel').addEventListener('click', cancelActive);
 
     refreshSupport();
     renderRecords();

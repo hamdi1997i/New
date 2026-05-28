@@ -1,5 +1,8 @@
-/* Service worker — offline cache for the app shell */
-const CACHE = 'nfc-studio-v1';
+/* Service worker — offline cache for the app shell.
+   Strategy: network-first for the app shell (HTML/CSS/JS) so new deploys are
+   picked up immediately, falling back to cache when offline. Bump CACHE on
+   every release to evict stale assets. */
+const CACHE = 'nfc-studio-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -21,15 +24,20 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // Network-first: always try the live version, cache it, fall back when offline.
   e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).then((res) => {
+    fetch(e.request)
+      .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
         return res;
-      }).catch(() => cached)
-    )
+      })
+      .catch(() => caches.match(e.request).then((cached) => cached || caches.match('./index.html')))
   );
 });

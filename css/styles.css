@@ -27,6 +27,9 @@
 }
 
 * { box-sizing: border-box; }
+/* Ensure the HTML `hidden` attribute always wins over display rules below
+   (e.g. .overlay/.btn use display:flex, which would otherwise reveal them). */
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
